@@ -172,7 +172,25 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [savedMessage, setSavedMessage] = useState('');
+  const [inputMode, setInputMode] = useState('text');
+  const [transcribing, setTranscribing] = useState(false);
   const supabase = createClient();
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setTranscribing(true);
+    setTranscript('');
+    const formData = new FormData();
+    formData.append('audio', file);
+    const response = await fetch('/api/transcribe', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await response.json();
+    if (data.transcript) setTranscript(data.transcript);
+    setTranscribing(false);
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -232,15 +250,55 @@ export default function Home() {
         </div>
 
         <div style={{ background: '#FFFAF5', border: '1px solid #E8D5BC', borderRadius: 20, padding: 28, boxShadow: '0 4px 24px rgba(100,70,40,0.08)' }}>
-          <label style={{ display: 'block', color: '#5C4A36', fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
-            Paste your coaching session transcript
-          </label>
-          <textarea
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+  <button
+    onClick={() => setInputMode('text')}
+    style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `2px solid ${inputMode === 'text' ? '#8B6240' : '#D9C9B3'}`, background: inputMode === 'text' ? '#F5EDE0' : 'transparent', color: inputMode === 'text' ? '#8B6240' : '#8B7355', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+    📝 Paste Transcript
+  </button>
+  <button
+    onClick={() => setInputMode('audio')}
+    style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `2px solid ${inputMode === 'audio' ? '#8B6240' : '#D9C9B3'}`, background: inputMode === 'audio' ? '#F5EDE0' : 'transparent', color: inputMode === 'audio' ? '#8B6240' : '#8B7355', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+    🎙️ Upload Audio
+  </button>
+</div>
+
+{inputMode === 'text' ? (
+  <>
+    <label style={{ display: 'block', color: '#5C4A36', fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
+      Paste your coaching session transcript
+    </label>
+    <textarea
             style={{ width: '100%', height: 220, border: '1px solid #D9C9B3', borderRadius: 12, padding: 16, fontSize: 13, color: '#5C4A36', background: '#FDF8F2', resize: 'vertical', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
             placeholder="Coach: What would you like to focus on today?&#10;Client: I've been struggling with..."
             value={transcript}
             onChange={e => setTranscript(e.target.value)}
-          />
+  />
+  </>
+) : (
+  <>
+    <label style={{ display: 'block', color: '#5C4A36', fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
+      Upload your coaching session audio or video
+    </label>
+    <input
+      type="file"
+      accept="audio/*,video/*"
+      onChange={handleFileUpload}
+      style={{ width: '100%', border: '1px solid #D9C9B3', borderRadius: 12, padding: 16, fontSize: 13, color: '#5C4A36', background: '#FDF8F2', boxSizing: 'border-box', cursor: 'pointer' }}
+    />
+    {transcribing && (
+      <div style={{ marginTop: 12, padding: '12px 16px', background: '#F5EDE0', borderRadius: 10, color: '#8B6240', fontSize: 13, fontWeight: 600 }}>
+        🎙️ Transcribing and anonymizing audio...
+      </div>
+    )}
+    {transcript && inputMode === 'audio' && (
+      <div style={{ marginTop: 12, padding: '12px 16px', background: '#E8F5E9', borderRadius: 10, border: '1px solid #A5D6A7' }}>
+        <p style={{ color: '#2E7D32', fontSize: 12, fontWeight: 700, margin: '0 0 6px' }}>✓ Transcript ready and anonymized</p>
+        <p style={{ color: '#5C4A36', fontSize: 12, margin: 0, maxHeight: 80, overflow: 'hidden' }}>{transcript.slice(0, 200)}...</p>
+      </div>
+    )}
+  </>
+)}
           <button
             onClick={analyzeTranscript}
             disabled={loading || !transcript.trim()}
