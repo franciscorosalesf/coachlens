@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '../../lib/supabase';
+import ReactMarkdown from 'react-markdown';
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState([]);
@@ -31,6 +32,15 @@ export default function SessionsPage() {
       year: 'numeric', month: 'long', day: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
+  };
+
+  const markdownStyles = {
+    h1: { fontFamily: 'Georgia, serif', fontSize: 22, color: '#3D2B1F', marginTop: 24, marginBottom: 8 },
+    h2: { fontFamily: 'Georgia, serif', fontSize: 18, color: '#3D2B1F', marginTop: 20, marginBottom: 6 },
+    h3: { fontFamily: 'Georgia, serif', fontSize: 15, color: '#5C4A36', marginTop: 16, marginBottom: 4 },
+    p: { fontSize: 14, color: '#5C4A36', lineHeight: 1.75, marginBottom: 12 },
+    li: { fontSize: 14, color: '#5C4A36', lineHeight: 1.75, marginBottom: 4 },
+    strong: { color: '#3D2B1F', fontWeight: 700 },
   };
 
   return (
@@ -90,7 +100,18 @@ export default function SessionsPage() {
             </button>
             <div style={{ background: '#FFFAF5', border: '1px solid #E8D5BC', borderRadius: 20, padding: 28 }}>
               <p style={{ color: '#8B7355', fontSize: 13, marginBottom: 16 }}>{formatDate(selected.created_at)}</p>
-              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: '#5C4A36', lineHeight: 1.75 }}>{selected.analysis}</pre>
+              <ReactMarkdown
+                components={{
+                  h1: ({children}) => <h1 style={markdownStyles.h1}>{children}</h1>,
+                  h2: ({children}) => <h2 style={markdownStyles.h2}>{children}</h2>,
+                  h3: ({children}) => <h3 style={markdownStyles.h3}>{children}</h3>,
+                  p: ({children}) => <p style={markdownStyles.p}>{children}</p>,
+                  li: ({children}) => <li style={markdownStyles.li}>{children}</li>,
+                  strong: ({children}) => <strong style={markdownStyles.strong}>{children}</strong>,
+                }}
+              >
+                {selected.analysis}
+              </ReactMarkdown>
             </div>
           </div>
         )}
