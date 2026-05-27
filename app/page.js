@@ -174,6 +174,8 @@ export default function Home() {
   const [savedMessage, setSavedMessage] = useState('');
   const [inputMode, setInputMode] = useState('text');
   const [transcribing, setTranscribing] = useState(false);
+  const [coaches, setCoaches] = useState([]);
+  const [selectedCoach, setSelectedCoach] = useState('');
   const supabase = createClient();
 
   const handleFileUpload = async (e) => {
@@ -195,7 +197,10 @@ export default function Home() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) window.location.href = '/login';
-      else setUser(data.user);
+      else {
+        setUser(data.user);
+        supabase.from('coaches').select('id, name').eq('user_id', data.user.id).order('name').then(({ data: c }) => setCoaches(c || []));
+      }
     });
   }, []);
 
@@ -224,6 +229,7 @@ export default function Home() {
         user_id: user.id,
         transcript,
         analysis: data.analysis,
+        coach_id: selectedCoach || null,
       });
       if (!error) setSavedMessage('✓ Session saved to your history');
     }
@@ -299,6 +305,20 @@ export default function Home() {
     )}
   </>
 )}
+          {coaches.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <label style={{ display: 'block', color: '#5C4A36', fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
+                Assign to coach (optional)
+              </label>
+              <select
+                value={selectedCoach}
+                onChange={e => setSelectedCoach(e.target.value)}
+                style={{ width: '100%', border: '1px solid #D9C9B3', borderRadius: 12, padding: '12px 16px', fontSize: 14, color: '#5C4A36', background: '#FDF8F2', outline: 'none', boxSizing: 'border-box' }}>
+                <option value="">— No coach selected —</option>
+                {coaches.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
           <button
             onClick={analyzeTranscript}
             disabled={loading || !transcript.trim()}
