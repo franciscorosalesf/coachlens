@@ -1,4 +1,3 @@
-cat > ~/Documents/CoachLens/coachlens/app/sessions/page.js << 'ENDOFFILE'
 'use client';
 
 import { useState, useEffect } from 'react';
