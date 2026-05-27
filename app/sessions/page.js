@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '../../lib/supabase';
 import ReactMarkdown from 'react-markdown';
 
@@ -10,8 +11,8 @@ export default function SessionsPage() {
   const [selected, setSelected] = useState(null);
   const [coachName, setCoachName] = useState('');
   const supabase = createClient();
-  const coachId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('coach') : null;
-
+  const searchParams = useSearchParams();
+  const coachId = searchParams.get('coach');
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) window.location.href = '/login';
