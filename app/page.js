@@ -250,6 +250,7 @@ export default function Home() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <a href="/sessions" style={{ color: '#8B6240', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>My Sessions</a>
+          <a href="/coaches" style={{ color: '#8B6240', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>My Coaches</a>
           <a href="/dashboard" style={{ color: '#8B6240', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Dashboard</a>
             <button onClick={handleSignOut} style={{ background: 'transparent', border: '1px solid #D9C9B3', borderRadius: 10, padding: '8px 16px', color: '#8B7355', fontSize: 13, cursor: 'pointer' }}>Sign Out</button>
           </div>
