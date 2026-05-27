@@ -1,4 +1,3 @@
-cd ~/Documents/CoachLens/coachlens && cat > app/sessions/page.js << 'EOF'
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
