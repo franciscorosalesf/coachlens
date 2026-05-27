@@ -6,6 +6,13 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+  },
+};
 export async function POST(request) {
   try {
     const formData = await request.formData();
