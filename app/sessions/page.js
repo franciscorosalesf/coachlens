@@ -8,7 +8,9 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [coachName, setCoachName] = useState('');
   const supabase = createClient();
+  const coachId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('coach') : null;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -18,13 +20,20 @@ export default function SessionsPage() {
   }, []);
 
   const fetchSessions = async (userId) => {
-    const { data } = await supabase
+    let query = supabase
       .from('sessions')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+    if (coachId) query = query.eq('coach_id', coachId);
+    const { data } = await query;
     setSessions(data || []);
+    if (coachId) {
+      const { data: coach } = await supabase.from('coaches').select('name').eq('id', coachId).single();
+      if (coach) setCoachName(coach.name);
+    }
     setLoading(false);
+  };
   };
 
   const formatDate = (dateString) => {
@@ -137,11 +146,13 @@ export default function SessionsPage() {
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <div>
-            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 36, color: '#3D2B1F', margin: 0 }}>My Sessions</h1>
-            <p style={{ color: '#8B7355', fontSize: 14, marginTop: 4 }}>Your coaching session history</p>
+          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 36, color: '#3D2B1F', margin: 0 }}>My Sessions</h1>
+          <p style={{ color: '#8B7355', fontSize: 14, marginTop: 4 }}>Your coaching session history</p>
           </div>
-          <a href="/" style={{ background: '#8B6240', color: '#FFF', borderRadius: 12, padding: '10px 20px', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>+ New Analysis</a>
-        </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {coachId && <a href="/coaches" style={{ background: 'transparent', border: '1px solid #D9C9B3', color: '#8B7355', borderRadius: 12, padding: '10px 20px', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>← My Coaches</a>}
+            <a href="/" style={{ background: '#8B6240', color: '#FFF', borderRadius: 12, padding: '10px 20px', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>+ New Analysis</a>
+          </div>
         {loading && <p style={{ color: '#8B7355', textAlign: 'center' }}>Loading sessions...</p>}
         {!loading && sessions.length === 0 && (
           <div style={{ background: '#FFFAF5', border: '1px solid #E8D5BC', borderRadius: 20, padding: 48, textAlign: 'center' }}>
