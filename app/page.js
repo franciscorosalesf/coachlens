@@ -223,7 +223,7 @@ export default function Home() {
 
       if (data.error) {
         console.error('Transcription error:', data.error);
-        alert(`Transcription failed: ${data.error}`);
+        alert(data.error);
         return;
       }
 

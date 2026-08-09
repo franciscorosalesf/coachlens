@@ -63,14 +63,18 @@ export async function POST(request) {
       response_format: 'text',
     });
 
-    // Step 3: Anonymize with Claude
-    const anonymized = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 32000,
-      messages: [
-        {
-          role: 'user',
-          content: `You are a privacy specialist. Anonymize the following coaching session transcript by:
+    // Step 3: Anonymize with Claude. Streamed because max_tokens: 32000 can run
+    // past the 10-minute non-streaming limit on long transcripts.
+    let anonymizedTranscript;
+    let stopReason;
+    try {
+      const stream = anthropic.messages.stream({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 32000,
+        messages: [
+          {
+            role: 'user',
+            content: `You are a privacy specialist. Anonymize the following coaching session transcript by:
 1. Identifying who is the coach and who is the client based on context
 2. Replacing the coach's name with "Coach:" at the start of each of their lines
 3. Replacing the client's name with "Client:" at the start of each of their lines
@@ -82,23 +86,37 @@ Return the complete anonymized transcript from beginning to end. Do not truncate
 
 Transcript:
 ${transcription}`,
-        },
-      ],
-    });
+          },
+        ],
+      });
 
-    const anonymizedTranscript = anonymized.content[0].text;
+      let text = '';
+      stream.on('text', (delta) => {
+        text += delta;
+      });
+
+      const finalMessage = await stream.finalMessage();
+      anonymizedTranscript = text;
+      stopReason = finalMessage.stop_reason;
+    } catch (error) {
+      console.error('Anonymization error:', error);
+      return Response.json(
+        { error: `Anonymization failed: ${error.message}` },
+        { status: 500 }
+      );
+    }
 
     // Warn if Claude ran out of room rather than silently returning a partial transcript
-    if (anonymized.stop_reason === 'max_tokens') {
+    if (stopReason === 'max_tokens') {
       console.warn('Anonymization hit max_tokens — transcript may be incomplete');
     }
 
     return Response.json({
       transcript: anonymizedTranscript,
-      truncated: anonymized.stop_reason === 'max_tokens',
+      truncated: stopReason === 'max_tokens',
     });
   } catch (error) {
     console.error('Transcription error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: `Transcription failed: ${error.message}` }, { status: 500 });
   }
 }
