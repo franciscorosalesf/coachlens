@@ -181,17 +181,65 @@ export default function Home() {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     setTranscribing(true);
     setTranscript('');
-    const formData = new FormData();
-    formData.append('audio', file);
-    const response = await fetch('/api/transcribe', {
-      method: 'POST',
-      body: formData,
-    });
-    const data = await response.json();
-    if (data.transcript) setTranscript(data.transcript);
-    setTranscribing(false);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) {
+        alert('Your session expired. Please sign in again.');
+        window.location.href = '/login';
+        return;
+      }
+
+      // Store under a folder named for the user id so the storage
+      // policies keep each account's recordings private.
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const audioPath = `${userData.user.id}/${Date.now()}_${safeName}`;
+
+      // Step 1: upload straight to Supabase Storage, bypassing Vercel
+      const { error: uploadError } = await supabase.storage
+        .from('session-audio')
+        .upload(audioPath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        alert(`Upload failed: ${uploadError.message}`);
+        return;
+      }
+
+      // Step 2: ask the server to transcribe it (tiny payload — just a path)
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audioPath }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        console.error('Transcription error:', data.error);
+        alert(`Transcription failed: ${data.error}`);
+        return;
+      }
+
+      if (data.transcript) {
+        setTranscript(data.transcript);
+        if (data.truncated) {
+          alert('Heads up: this session was long enough that the transcript may be incomplete. Review it before analyzing.');
+        }
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      alert(`Something went wrong: ${err.message}`);
+    } finally {
+      setTranscribing(false);
+      e.target.value = '';
+    }
   };
 
   useEffect(() => {
